@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: club-management-system
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/club_management
+    username: postgres
+    password: 090517
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: 8081
