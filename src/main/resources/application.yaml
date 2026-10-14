@@ -19,3 +19,8 @@ spring:
 
 server:
   port: 8081
+
+jwt:
+  secret: UYGu6PlXme7AdOizM5jKvV5Cc7vq965n+ZEdBTVHmEQ=
+  access-expiration: 900000
+  refresh-expiration: 604800000
