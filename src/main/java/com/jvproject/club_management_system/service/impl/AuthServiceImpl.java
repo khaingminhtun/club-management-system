@@ -1,23 +1,24 @@
 package com.jvproject.club_management_system.service.impl;
 
-import com.jvproject.club_management_system.dto.auth.AuthResponse;
 import com.jvproject.club_management_system.dto.auth.RegisterRequest;
-import com.jvproject.club_management_system.enums.RoleName;
-import com.jvproject.club_management_system.model.Role;
+import com.jvproject.club_management_system.dto.auth.RegisterResponse;
+import com.jvproject.club_management_system.enums.AccountStatus;
+import com.jvproject.club_management_system.enums.EnrollmentStatus;
+import com.jvproject.club_management_system.exception.ConflictException;
+import com.jvproject.club_management_system.exception.RegistrationRejectedException;
+import com.jvproject.club_management_system.model.StudentRegistry;
 import com.jvproject.club_management_system.model.User;
 import com.jvproject.club_management_system.repository.RoleRepository;
+import com.jvproject.club_management_system.repository.StudentRegistryRepository;
 import com.jvproject.club_management_system.repository.UserRepository;
 import com.jvproject.club_management_system.security.JwtService;
 import com.jvproject.club_management_system.service.AuthService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.util.HashSet;
-import java.util.List;
+import java.time.Instant;
 import java.util.Locale;
 
 @Service
@@ -25,6 +26,7 @@ import java.util.Locale;
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
+    private final StudentRegistryRepository studentRegistryRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
@@ -33,58 +35,74 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
+    public RegisterResponse register(RegisterRequest request) {
 
         String email = request.email()
                 .trim()
                 .toLowerCase(Locale.ROOT);
 
-        if (userRepository.existsByEmail(email)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "An account with this email already exists"
+        String studentId = request.studentId().trim();
+
+        String fullName = request.fullName().trim();
+
+        // 1. Check whether the account already exists.
+        if (userRepository.existsByEmailIgnoreCase(email)) {
+            throw new ConflictException(
+                    "An account with this email already exists."
             );
         }
 
-        Role studentRole = roleRepository.findByName(RoleName.STUDENT)
-                .orElseThrow(() -> new IllegalStateException(
-                        "STUDENT role is not configured"
-                ));
+        if (userRepository.existsByStudentId(studentId)) {
+            throw new ConflictException(
+                    "This student ID is already registered."
+            );
+        }
 
+        // 2. Find a matching trusted registry record.
+        StudentRegistry registry = studentRegistryRepository
+                .findByStudentIdAndUniversityEmailIgnoreCase(
+                        studentId,
+                        email
+                )
+                .orElseThrow(() ->
+                        new RegistrationRejectedException(
+                                "Unable to verify student details."
+                        )
+                );
+
+        // 3. Check enrollment eligibility.
+        if (registry.getEnrollmentStatus() != EnrollmentStatus.ACTIVE) {
+            throw new RegistrationRejectedException(
+                    "Unable to verify student details."
+            );
+        }
+
+        // 4. Confirm the submitted name against trusted registry data.
+        if (!registry.getFullName().trim()
+                .equalsIgnoreCase(fullName)) {
+            throw new RegistrationRejectedException(
+                    "Unable to verify student details."
+            );
+        }
+
+        // 5. Create the pending UCMS account.
         User user = User.builder()
-                .fullName(request.fullName().trim())
+                .fullName(fullName)
+                .studentId(studentId)
                 .email(email)
                 .passwordHash(passwordEncoder.encode(request.password()))
                 .enabled(true)
-                .roles(new HashSet<>(List.of(studentRole)))
+                .status(AccountStatus.PENDING_EMAIL)
+                .studentVerifiedAt(Instant.now())
                 .build();
 
-        User savedUser = userRepository.save(user);
+        userRepository.save(user);
 
-        List<String> authorities = savedUser.getRoles()
-                .stream()
-                .map(role -> "ROLE_" + role.getName().name())
-                .toList();
-
-        String accessToken = jwtService.generateAccessToken(
-                savedUser.getId(),
-                savedUser.getEmail(),
-                authorities
-        );
-
-        String refreshToken = jwtService.generateRefreshToken(
-                savedUser.getEmail()
-        );
-
-        return new AuthResponse(
-                savedUser.getId(),
-                savedUser.getFullName(),
-                savedUser.getEmail(),
-                RoleName.STUDENT.name(),
-                accessToken,
-                refreshToken,
-                "Bearer",
-                jwtService.getAccessExpiration()
+        // 6. OTP creation and email delivery will be added next.
+        return new RegisterResponse(
+                "Registration accepted. Verify your email to activate your account.",
+                email,
+                AccountStatus.PENDING_EMAIL.name()
         );
     }
 }
