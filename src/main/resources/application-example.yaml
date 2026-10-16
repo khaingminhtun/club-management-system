@@ -1,0 +1,24 @@
+
+spring:
+  application:
+    name: club-management-system
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/club_management}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      username: ${REDIS_USERNAME:clubapp}
+      password: ${REDIS_PASSWORD}
+      connect-timeout: 2s
+      timeout: 3s
+
+sendgrid:
+  api-key: ${SENDGRID_API_KEY}
+  from-email: ${SENDGRID_FROM_EMAIL}
+
+# Add your other non-secret settings as needed.

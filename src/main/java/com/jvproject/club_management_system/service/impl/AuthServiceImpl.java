@@ -6,6 +6,7 @@ import com.jvproject.club_management_system.enums.AccountStatus;
 import com.jvproject.club_management_system.enums.EnrollmentStatus;
 import com.jvproject.club_management_system.exception.ConflictException;
 import com.jvproject.club_management_system.exception.RegistrationRejectedException;
+import com.jvproject.club_management_system.integration.email.OtpService;
 import com.jvproject.club_management_system.model.StudentRegistry;
 import com.jvproject.club_management_system.model.User;
 import com.jvproject.club_management_system.repository.RoleRepository;
@@ -30,6 +31,7 @@ public class AuthServiceImpl implements AuthService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final OtpService otpService;
 
 
 
@@ -97,6 +99,11 @@ public class AuthServiceImpl implements AuthService {
                 .build();
 
         userRepository.save(user);
+
+        otpService.sendRegistrationOtp(
+                request.email(),
+                request.fullName()
+        );
 
         // 6. OTP creation and email delivery will be added next.
         return new RegisterResponse(

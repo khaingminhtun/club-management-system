@@ -51,7 +51,9 @@ public class SecurityConfig {
                         // Swagger / OpenAPI during development
                         .requestMatchers(
                                 "/swagger-ui/**",
-                                "/v3/api-docs/**"
+                                "/v3/api-docs/**",
+                                "/api/dev/redis/test",
+                                "/api/dev/email/test"
                         ).permitAll()
 
                         // Admin-only endpoints
