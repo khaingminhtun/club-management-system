@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import java.time.Duration;
 import java.util.Date;
 import java.util.List;
 
@@ -182,4 +183,13 @@ public class JwtService {
                 .getPayload();
     }
 
+    public Duration getAccessTokenLifetime() {
+        return Duration.ofMillis(accessExpiration);
+    }
+
+    public Duration getRefreshTokenLifetime() {
+        return Duration.ofMillis(refreshExpiration);
+    }
+
 }
+

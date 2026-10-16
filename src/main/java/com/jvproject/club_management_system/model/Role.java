@@ -3,14 +3,14 @@ package com.jvproject.club_management_system.model;
 
 import com.jvproject.club_management_system.enums.RoleName;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
 @Table(name = "roles")
 @Getter
 @Setter
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor
 public class Role {
 

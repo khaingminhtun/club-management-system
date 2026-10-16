@@ -99,6 +99,35 @@ public class GlobalExceptionHandler {
         );
     }
 
+    //400 bad request for otp invalid
+    @ExceptionHandler(InvalidOtpException.class)
+    public ResponseEntity<ApiError> handleInvalidOtp(
+            InvalidOtpException ex,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage(),
+                request,
+                Map.of()
+        );
+    }
+
+    //400 for invalid refreshtoken
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    public ResponseEntity<ApiError> handleInvalidRefreshToken(
+            InvalidRefreshTokenException ex,
+            HttpServletRequest request
+    ){
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage(),
+                request,
+                Map.of()
+        );
+    }
+
+
     // 409 - Database constraint violation
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiError> handleDataIntegrityViolation(

@@ -2,9 +2,7 @@ package com.jvproject.club_management_system.model;
 
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.Instant;
 
@@ -20,6 +18,8 @@ import java.time.Instant;
 )
 @Getter
 @Setter
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor
 public class UserSession {
 

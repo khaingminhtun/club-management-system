@@ -1,14 +1,18 @@
 package com.jvproject.club_management_system.integration.email;
 
 
+import com.jvproject.club_management_system.exception.InvalidOtpException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.Duration;
+import java.util.List;
 import java.util.Locale;
 
+@Slf4j
 @Service
 public class OtpService {
 
@@ -80,6 +84,7 @@ public class OtpService {
 
         if (submittedOtp == null ||
                 !submittedOtp.matches("\\d{6}")) {
+            log.warn("subttemt otp");
             return false;
         }
 
@@ -89,6 +94,7 @@ public class OtpService {
         String storedHash = redisTemplate.opsForValue().get(otpKey);
 
         if (storedHash == null) {
+
             return false;
         }
 
@@ -101,25 +107,30 @@ public class OtpService {
 
         if (attempts == null || attempts > MAX_ATTEMPTS) {
             redisTemplate.delete(otpKey);
-            redisTemplate.delete(attemptsKey);
+
+
             return false;
         }
+
 
         boolean matches = passwordEncoder.matches(
                 submittedOtp,
                 storedHash
         );
 
+
         if (!matches) {
             if (attempts >= MAX_ATTEMPTS) {
                 redisTemplate.delete(otpKey);
                 redisTemplate.delete(attemptsKey);
             }
+
             return false;
         }
 
         redisTemplate.delete(otpKey);
         redisTemplate.delete(attemptsKey);
+
 
         return true;
     }
@@ -130,6 +141,50 @@ public class OtpService {
         }
 
         return email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    public void resendRegistrationOtp(String email, String fullName) {
+        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+
+        String otpKey = "otp:register:" + normalizedEmail;
+        String attemptsKey = "otp:register:attempts:" + normalizedEmail;
+        String cooldownKey = "otp:register:cooldown:" + normalizedEmail;
+
+        Boolean cooldownAcquired = redisTemplate.opsForValue()
+                .setIfAbsent(
+                        cooldownKey,
+                        "1",
+                        Duration.ofSeconds(60)
+                );
+
+        if (!Boolean.TRUE.equals(cooldownAcquired)) {
+            throw new InvalidOtpException(
+                    "Please wait before requesting another verification code."
+            );
+        }
+
+        String otp = "%06d".formatted(
+                secureRandom.nextInt(1_000_000)
+        );
+
+        try {
+            redisTemplate.opsForValue().set(
+                    otpKey,
+                    passwordEncoder.encode(otp),
+                    Duration.ofMinutes(5)
+            );
+
+            redisTemplate.delete(attemptsKey);
+
+            emailService.sendOtpVerificationEmail(
+                    normalizedEmail,
+                    fullName,
+                    otp
+            );
+        } catch (RuntimeException exception) {
+            redisTemplate.delete(List.of(otpKey, attemptsKey, cooldownKey));
+            throw exception;
+        }
     }
 
     private String otpKey(String email) {
@@ -143,4 +198,6 @@ public class OtpService {
     private String cooldownKey(String email) {
         return "otp:register:cooldown:" + email;
     }
+
+
 }
