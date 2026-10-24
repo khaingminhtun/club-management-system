@@ -6,14 +6,8 @@ import com.jvproject.club_management_system.enums.EnrollmentStatus;
 import com.jvproject.club_management_system.enums.RoleName;
 import com.jvproject.club_management_system.exception.*;
 import com.jvproject.club_management_system.integration.email.OtpService;
-import com.jvproject.club_management_system.model.Role;
-import com.jvproject.club_management_system.model.StudentRegistry;
-import com.jvproject.club_management_system.model.User;
-import com.jvproject.club_management_system.model.UserSession;
-import com.jvproject.club_management_system.repository.RoleRepository;
-import com.jvproject.club_management_system.repository.StudentRegistryRepository;
-import com.jvproject.club_management_system.repository.UserRepository;
-import com.jvproject.club_management_system.repository.UserSessionRepository;
+import com.jvproject.club_management_system.model.*;
+import com.jvproject.club_management_system.repository.*;
 import com.jvproject.club_management_system.security.JwtService;
 import com.jvproject.club_management_system.service.AuthService;
 import com.jvproject.club_management_system.util.TokenHashUtil;
@@ -41,6 +35,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final OtpService otpService;
+    private final UserProfileRepository userProfileRepository;
 
 
 
@@ -108,6 +103,17 @@ public class AuthServiceImpl implements AuthService {
                 .build();
 
         userRepository.save(user);
+
+        UserProfile profile = UserProfile.builder()
+                .user(user)
+                .displayName(user.getFullName())
+                .profileImageUrl(null)
+                .bio(null)
+                .department(null)
+                .academicYear(null)
+                .build();
+
+        userProfileRepository.save(profile);
 
         otpService.sendRegistrationOtp(
                 request.email(),
@@ -400,5 +406,7 @@ public class AuthServiceImpl implements AuthService {
                 "If the registration is eligible, a verification code will be sent."
         );
     }
+
+
 
 }

@@ -57,7 +57,8 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/api/dev/redis/test",
-                                "/api/dev/email/test"
+                                "/api/dev/email/test",
+                                "/h2-console/**"
                         ).permitAll()
 
                         // Admin-only endpoints

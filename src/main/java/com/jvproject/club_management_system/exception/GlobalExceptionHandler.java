@@ -128,6 +128,20 @@ public class GlobalExceptionHandler {
     }
 
 
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ApiError> handleUnauthorizedException(
+            UnauthorizedException ex,
+            HttpServletRequest request) {
+
+        return buildResponse(
+                HttpStatus.UNAUTHORIZED,
+                ex.getMessage(),
+                request,
+                Map.of()
+        );
+    }
+
+
     // 409 - Database constraint violation
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiError> handleDataIntegrityViolation(
