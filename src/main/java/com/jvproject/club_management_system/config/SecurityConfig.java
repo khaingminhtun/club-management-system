@@ -25,13 +25,19 @@ public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
 
+
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+            JwtAuthenticationFilter jwtAuthenticationFilter
+    ) throws Exception {
 
         http
                 .csrf(AbstractHttpConfigurer::disable)
+
+                .headers(headers -> headers
+                        .frameOptions(frame -> frame.sameOrigin())
+                )
 
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -40,6 +46,7 @@ public class SecurityConfig {
                 .authenticationProvider(authenticationProvider())
 
                 .authorizeHttpRequests(auth -> auth
+
                         // Public authentication endpoints
                         .requestMatchers(
                                 HttpMethod.POST,
@@ -47,17 +54,23 @@ public class SecurityConfig {
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/refresh",
                                 "/api/v1/auth/verify-email",
-                                "/api/v1/auth/login",
                                 "/api/v1/auth/resend-otp",
                                 "/api/v1/auth/logout"
                         ).permitAll()
 
-                        // Swagger / OpenAPI during development
+                        // Swagger / OpenAPI
                         .requestMatchers(
+                                "/swagger-ui.html",
                                 "/swagger-ui/**",
-                                "/v3/api-docs/**",
+                                "/v3/api-docs",
+                                "/v3/api-docs/**"
+                        ).permitAll()
+
+                        // Development-only endpoints
+                        .requestMatchers(
                                 "/api/dev/redis/test",
                                 "/api/dev/email/test",
+                                "/h2-console",
                                 "/h2-console/**"
                         ).permitAll()
 
@@ -65,18 +78,18 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/admin/**")
                         .hasRole("ADMIN")
 
-                        // Everything else requires authentication
+                        // All remaining endpoints require authentication
                         .anyRequest().authenticated()
-                ).addFilterBefore(
+                )
+
+                .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
                 );
 
-
-
-
         return http.build();
     }
+
 
 
     @Bean

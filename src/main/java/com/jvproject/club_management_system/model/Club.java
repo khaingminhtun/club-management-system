@@ -55,6 +55,9 @@ public class Club {
     @Builder.Default
     private ClubStatus status = ClubStatus.PENDING;
 
+    @Column(name = "rejection_reason", columnDefinition = "TEXT")
+    private String rejectionReason;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

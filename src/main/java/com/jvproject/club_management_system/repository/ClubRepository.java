@@ -13,13 +13,13 @@ public interface ClubRepository extends JpaRepository<Club,Long> {
 
     boolean existsBySlug(String slug);
 
-    Optional<Club> findBySlugAndStatus(
-            String slug,
-            ClubStatus status
-    );
+    List<Club> findByStatusOrderByCreatedAtAsc(ClubStatus status);
+
+    Optional<Club> findByIdAndStatus(Long id, ClubStatus status);
+
 
     List<Club> findAllByStatus(ClubStatus status);
 
-    List<Club> findAllByCreatedBy_Id(Long userId);
+
 
 }

@@ -113,6 +113,35 @@ public class GlobalExceptionHandler {
         );
     }
 
+
+    //403 AccountNotActive
+    @ExceptionHandler(AccountNotActiveException.class)
+    public ResponseEntity<ApiError> handleAccountNotActive(
+            AccountNotActiveException ex,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.FORBIDDEN,
+                ex.getMessage(),
+                request,
+                Map.of()
+        );
+    }
+
+    // 403 for verification required
+    @ExceptionHandler(VerificationRequiredException.class)
+    public ResponseEntity<ApiError> handleRequiredVerification(
+            AccountNotActiveException ex,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.FORBIDDEN,
+                ex.getMessage(),
+                request,
+                Map.of()
+        );
+    }
+
     //400 for invalid refreshtoken
     @ExceptionHandler(InvalidRefreshTokenException.class)
     public ResponseEntity<ApiError> handleInvalidRefreshToken(
