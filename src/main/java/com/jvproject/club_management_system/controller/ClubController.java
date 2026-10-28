@@ -3,6 +3,8 @@ package com.jvproject.club_management_system.controller;
 
 import com.jvproject.club_management_system.dto.club.CreateClubRequest;
 import com.jvproject.club_management_system.dto.club.ClubResponse;
+import com.jvproject.club_management_system.dto.club.ClubMemberResponse;
+import com.jvproject.club_management_system.dto.club.UpdateClubRequest;
 import com.jvproject.club_management_system.service.ClubService;
 
 import jakarta.validation.Valid;
@@ -62,6 +64,23 @@ public class ClubController {
         return ResponseEntity.ok(
                 clubService.getActiveClubById(clubId)
         );
+    }
+
+    @PatchMapping("/{clubId}")
+    public ResponseEntity<ClubResponse> updateClub(
+            @PathVariable Long clubId,
+            @Valid @RequestBody UpdateClubRequest request,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(clubService.updateClub(
+                clubId, request, authentication.getName()));
+    }
+
+    @GetMapping("/{clubId}/members")
+    public ResponseEntity<List<ClubMemberResponse>> getClubMembers(
+            @PathVariable Long clubId
+    ) {
+        return ResponseEntity.ok(clubService.getClubMembers(clubId));
     }
 
     /**

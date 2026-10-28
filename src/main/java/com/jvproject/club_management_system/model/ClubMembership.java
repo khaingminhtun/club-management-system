@@ -57,7 +57,7 @@ public class ClubMembership {
     @Builder.Default
     private MembershipStatus status = MembershipStatus.PENDING;
 
-    @Column(name = "requested_at", nullable = false, updatable = false)
+    @Column(name = "requested_at", nullable = false)
     private Instant requestedAt;
 
     @Column(name = "joined_at")

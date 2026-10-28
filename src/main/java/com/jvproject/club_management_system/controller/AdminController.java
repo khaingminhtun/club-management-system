@@ -3,6 +3,9 @@ package com.jvproject.club_management_system.controller;
 import com.jvproject.club_management_system.dto.admin.AdminProfileResponse;
 import com.jvproject.club_management_system.dto.club.ClubRejectionRequest;
 import com.jvproject.club_management_system.dto.club.PendingClubResponse;
+import com.jvproject.club_management_system.dto.club.ClubResponse;
+import com.jvproject.club_management_system.dto.user.UserResponse;
+import com.jvproject.club_management_system.dto.user.UpdateUserStatusRequest;
 import com.jvproject.club_management_system.service.AdminService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +37,29 @@ public class AdminController {
                 adminService.getPendingClubs();
 
         return ResponseEntity.ok(pendingClubs);
+    }
+
+    @GetMapping("/clubs")
+    public ResponseEntity<List<ClubResponse>> getClubs() {
+        return ResponseEntity.ok(adminService.getClubs());
+    }
+
+    @GetMapping("/clubs/{clubId}")
+    public ResponseEntity<ClubResponse> getClub(@PathVariable Long clubId) {
+        return ResponseEntity.ok(adminService.getClub(clubId));
+    }
+
+    @GetMapping("/users")
+    public ResponseEntity<List<UserResponse>> getUsers() {
+        return ResponseEntity.ok(adminService.getUsers());
+    }
+
+    @PatchMapping("/users/{userId}/status")
+    public ResponseEntity<UserResponse> updateUserStatus(
+            @PathVariable Long userId,
+            @Valid @RequestBody UpdateUserStatusRequest request
+    ) {
+        return ResponseEntity.ok(adminService.updateUserStatus(userId, request));
     }
 
     @PatchMapping("/clubs/{clubId}/approve")

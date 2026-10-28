@@ -11,7 +11,11 @@ import java.util.Optional;
 @Repository
 public interface ClubRepository extends JpaRepository<Club,Long> {
 
+    List<Club> findAllByOrderByCreatedAtDesc();
+
     boolean existsBySlug(String slug);
+
+    boolean existsBySlugAndIdNot(String slug, Long id);
 
     List<Club> findByStatusOrderByCreatedAtAsc(ClubStatus status);
 

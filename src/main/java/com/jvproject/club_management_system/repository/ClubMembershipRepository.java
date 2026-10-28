@@ -20,6 +20,20 @@ public interface ClubMembershipRepository
             MembershipStatus status
     );
 
+    List<ClubMembership> findAllByClub_IdAndStatusOrderByJoinedAtAsc(
+            Long clubId,
+            MembershipStatus status
+    );
+
+    List<ClubMembership> findAllByClub_IdAndStatusOrderByRequestedAtAsc(
+            Long clubId,
+            MembershipStatus status
+    );
+
+    Optional<ClubMembership> findByClub_IdAndUser_Id(Long clubId, Long userId);
+
+    Optional<ClubMembership> findByIdAndClub_Id(Long id, Long clubId);
+
     Optional<ClubMembership> findByClubAndUserAndRole(
             Club club,
             User user,

@@ -3,6 +3,10 @@ package com.jvproject.club_management_system.service.impl;
 import com.jvproject.club_management_system.dto.admin.AdminProfileResponse;
 import com.jvproject.club_management_system.dto.club.ClubRejectionRequest;
 import com.jvproject.club_management_system.dto.club.PendingClubResponse;
+import com.jvproject.club_management_system.dto.club.ClubResponse;
+import com.jvproject.club_management_system.dto.user.UserResponse;
+import com.jvproject.club_management_system.dto.user.UpdateUserStatusRequest;
+import com.jvproject.club_management_system.enums.AccountStatus;
 import com.jvproject.club_management_system.enums.ClubRole;
 import com.jvproject.club_management_system.enums.ClubStatus;
 import com.jvproject.club_management_system.enums.MembershipStatus;
@@ -11,6 +15,7 @@ import com.jvproject.club_management_system.exception.ConflictException;
 import com.jvproject.club_management_system.exception.ResourceNotFoundException;
 import com.jvproject.club_management_system.model.Club;
 import com.jvproject.club_management_system.model.ClubMembership;
+import com.jvproject.club_management_system.model.User;
 import com.jvproject.club_management_system.repository.ClubMembershipRepository;
 import com.jvproject.club_management_system.repository.ClubRepository;
 import com.jvproject.club_management_system.repository.UserRepository;
@@ -75,6 +80,40 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<ClubResponse> getClubs() {
+        return clubRepository.findAllByOrderByCreatedAtDesc().stream()
+                .map(this::mapToClubResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ClubResponse getClub(Long clubId) {
+        Club club = clubRepository.findById(clubId)
+                .orElseThrow(() -> new ResourceNotFoundException("Club not found"));
+        return mapToClubResponse(club);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserResponse> getUsers() {
+        return userRepository.findAllByOrderByCreatedAtDesc().stream()
+                .map(this::mapToUserResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public UserResponse updateUserStatus(Long userId, UpdateUserStatusRequest request) {
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        user.setStatus(request.status());
+        user.setEnabled(request.status() == AccountStatus.ACTIVE);
+        return mapToUserResponse(userRepository.save(user));
+    }
+
+    @Override
     @Transactional
     public void approveClub(Long clubId) {
         Club club = clubRepository
@@ -129,6 +168,25 @@ public class AdminServiceImpl implements AdminService {
                 club.getCreatedBy().getId(),
                 club.getCreatedBy().getFullName(),
                 club.getCreatedBy().getEmail()
+        );
+    }
+
+    private ClubResponse mapToClubResponse(Club club) {
+        return new ClubResponse(
+                club.getId(), club.getName(), club.getSlug(), club.getDescription(),
+                club.getLogoUrl(), club.getCoverImageUrl(), club.getStatus(),
+                club.getCreatedBy().getId(), club.getCreatedBy().getFullName(),
+                clubMembershipRepository.countByClub_IdAndStatus(
+                        club.getId(), MembershipStatus.APPROVED),
+                club.getCreatedAt(), club.getUpdatedAt()
+        );
+    }
+
+    private UserResponse mapToUserResponse(User user) {
+        return new UserResponse(
+                user.getId(), user.getStudentId(), user.getFullName(), user.getEmail(),
+                user.isEnabled(), user.getStatus(), user.getEmailVerifiedAt(),
+                user.getStudentVerifiedAt(), user.getCreatedAt()
         );
     }
 }

@@ -1,7 +1,9 @@
 package com.jvproject.club_management_system.service.impl;
 
 import com.jvproject.club_management_system.dto.club.ClubResponse;
+import com.jvproject.club_management_system.dto.club.ClubMemberResponse;
 import com.jvproject.club_management_system.dto.club.CreateClubRequest;
+import com.jvproject.club_management_system.dto.club.UpdateClubRequest;
 import com.jvproject.club_management_system.enums.ClubRole;
 import com.jvproject.club_management_system.enums.ClubStatus;
 import com.jvproject.club_management_system.enums.MembershipStatus;
@@ -14,6 +16,7 @@ import com.jvproject.club_management_system.repository.ClubRepository;
 import com.jvproject.club_management_system.service.ClubService;
 import com.jvproject.club_management_system.service.UserValidationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -117,7 +120,70 @@ public class ClubServiceImpl implements ClubService {
                 .toList();
     }
 
+    @Override
+    @Transactional
+    public ClubResponse updateClub(
+            Long clubId,
+            UpdateClubRequest request,
+            String authenticatedEmail
+    ) {
+        User user = userValidationService.getUserByEmail(authenticatedEmail);
+        Club club = clubRepository.findById(clubId)
+                .orElseThrow(() -> new ResourceNotFoundException("Club not found: " + clubId));
+
+        if (!club.getCreatedBy().getId().equals(user.getId())) {
+            throw new AccessDeniedException("Only the club founder can update this club.");
+        }
+
+        if (request.name() != null) {
+            String name = request.name().trim();
+            club.setName(name);
+            club.setSlug(generateUniqueSlug(name, clubId));
+        }
+        if (request.description() != null) {
+            club.setDescription(request.description().trim());
+        }
+        if (request.logoUrl() != null) {
+            club.setLogoUrl(normalizeOptional(request.logoUrl()));
+        }
+        if (request.coverImageUrl() != null) {
+            club.setCoverImageUrl(normalizeOptional(request.coverImageUrl()));
+        }
+
+        long memberCount = membershipRepository.countByClub_IdAndStatus(
+                clubId,
+                MembershipStatus.APPROVED
+        );
+        return toResponse(clubRepository.save(club), memberCount);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ClubMemberResponse> getClubMembers(Long clubId) {
+        Club club = clubRepository.findById(clubId)
+                .filter(item -> item.getStatus() == ClubStatus.ACTIVE)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Active club not found: " + clubId
+                ));
+
+        return membershipRepository.findAllByClub_IdAndStatusOrderByJoinedAtAsc(
+                        club.getId(), MembershipStatus.APPROVED)
+                .stream()
+                .map(membership -> new ClubMemberResponse(
+                        membership.getUser().getId(),
+                        membership.getUser().getFullName(),
+                        membership.getUser().getEmail(),
+                        membership.getRole(),
+                        membership.getJoinedAt()
+                ))
+                .toList();
+    }
+
     private String generateUniqueSlug(String name) {
+        return generateUniqueSlug(name, null);
+    }
+
+    private String generateUniqueSlug(String name, Long excludedClubId) {
         String baseSlug = name.trim()
                 .toLowerCase(Locale.ROOT)
                 .replaceAll("[^a-z0-9]+", "-")
@@ -130,7 +196,9 @@ public class ClubServiceImpl implements ClubService {
         String slug = baseSlug;
         int suffix = 2;
 
-        while (clubRepository.existsBySlug(slug)) {
+        while (excludedClubId == null
+                ? clubRepository.existsBySlug(slug)
+                : clubRepository.existsBySlugAndIdNot(slug, excludedClubId)) {
             slug = baseSlug + "-" + suffix++;
         }
 
@@ -160,5 +228,6 @@ public class ClubServiceImpl implements ClubService {
                 memberCount,
                 club.getCreatedAt(),
                 club.getUpdatedAt()
-        );}
+        );
+    }
 }
